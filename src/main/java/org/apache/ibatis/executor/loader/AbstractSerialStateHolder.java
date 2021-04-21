@@ -1,17 +1,17 @@
-/*
- * Copyright 2013 MyBatis.org.
+/**
+ *    Copyright 2009-2020 the original author or authors.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ *    Licensed under the Apache License, Version 2.0 (the "License");
+ *    you may not use this file except in compliance with the License.
+ *    You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS,
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *    See the License for the specific language governing permissions and
+ *    limitations under the License.
  */
 package org.apache.ibatis.executor.loader;
 
@@ -31,12 +31,17 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.ibatis.io.SerialFilterChecker;
 import org.apache.ibatis.reflection.factory.ObjectFactory;
 
+/**
+ * @author Eduardo Macarron
+ * @author Franta Mejta
+ */
 public abstract class AbstractSerialStateHolder implements Externalizable {
 
   private static final long serialVersionUID = 8940388717901644661L;
-  private static final ThreadLocal<ObjectOutputStream> stream = new ThreadLocal<ObjectOutputStream>();
+  private static final ThreadLocal<ObjectOutputStream> stream = new ThreadLocal<>();
   private byte[] userBeanBytes = new byte[0];
   private Object userBean;
   private Map<String, ResultLoaderMap.LoadPair> unloadedProperties;
@@ -54,10 +59,10 @@ public abstract class AbstractSerialStateHolder implements Externalizable {
           List<Class<?>> constructorArgTypes,
           List<Object> constructorArgs) {
     this.userBean = userBean;
-    this.unloadedProperties = new HashMap<String, ResultLoaderMap.LoadPair>(unloadedProperties);
+    this.unloadedProperties = new HashMap<>(unloadedProperties);
     this.objectFactory = objectFactory;
-    this.constructorArgTypes = constructorArgTypes.toArray(new Class<?>[constructorArgTypes.size()]);
-    this.constructorArgs = constructorArgs.toArray(new Object[constructorArgs.size()]);
+    this.constructorArgTypes = constructorArgTypes.toArray(new Class<?>[0]);
+    this.constructorArgs = constructorArgs.toArray(new Object[0]);
   }
 
   @Override
@@ -102,9 +107,10 @@ public abstract class AbstractSerialStateHolder implements Externalizable {
       return this.userBean;
     }
 
+    SerialFilterChecker.check();
+
     /* First run */
-    try {
-      final ObjectInputStream in = new ObjectInputStream(new ByteArrayInputStream(this.userBeanBytes));
+    try (ObjectInputStream in = new ObjectInputStream(new ByteArrayInputStream(this.userBeanBytes))) {
       this.userBean = in.readObject();
       this.unloadedProperties = (Map<String, ResultLoaderMap.LoadPair>) in.readObject();
       this.objectFactory = (ObjectFactory) in.readObject();
@@ -116,7 +122,7 @@ public abstract class AbstractSerialStateHolder implements Externalizable {
       throw (ObjectStreamException) new InvalidClassException(ex.getLocalizedMessage()).initCause(ex);
     }
 
-    final Map<String, ResultLoaderMap.LoadPair> arrayProps = new HashMap<String, ResultLoaderMap.LoadPair>(this.unloadedProperties);
+    final Map<String, ResultLoaderMap.LoadPair> arrayProps = new HashMap<>(this.unloadedProperties);
     final List<Class<?>> arrayTypes = Arrays.asList(this.constructorArgTypes);
     final List<Object> arrayValues = Arrays.asList(this.constructorArgs);
 
